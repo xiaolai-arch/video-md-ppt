@@ -1,0 +1,54 @@
+# video-md-ppt 全局配置
+# 修改后无需重启；每个阶段运行时重新读取。
+# 选型依据见 docs/技术选型.md。
+
+[paths]
+# 相对路径以仓库根目录为基准
+videos  = "videos"
+work    = "work"
+output  = "output"
+ffmpeg  = "ffmpeg"     # 也可写绝对路径
+ffprobe = "ffprobe"
+
+[asr]
+# S1 使用；M0 不依赖
+model           = "models/faster-whisper-large-v3"  # 本地目录优先；写模型名会走 HF 下载（镜像下易卡 0 字节）
+device          = "auto"            # auto | cuda | cpu
+compute_type    = "int8_float16"    # 8GB 显存保守值；余量足时 float16
+language        = "zh"              # 显式指定，禁止 auto：猜错会把口音英文"幻听"成中文
+vad_filter      = true
+word_timestamps = true
+beam_size       = 5
+glossary        = "glossary.txt"    # 可选：术语表，同时用于 hotwords 与后处理
+hotwords        = true              # 把术语表传给解码期；与 initial_prompt 二选一
+condition_on_previous_text = false  # 长音频关闭，减少复读/幻觉
+simplify     = true              # 中文转写统一转简体（需要 zhconv）
+
+[frames]
+# S2 使用：两段式抽帧
+scene_threshold   = 0.3     # 场景硬切阈值
+interval_seconds  = 12      # 固定间隔兜底
+phash_hamming     = 6       # dHash 距离 ≤ 此值视为同一页
+pixel_diff        = 0.08    # 32×32 RGB 平均差 ≤ 此值视为同一页
+min_dwell_seconds = 2       # 停留过短的翻页动画丢弃
+min_gap_seconds   = 20      # 相邻保留帧最小间隔（场景切换帧豁免）
+max_frames        = 80      # 单视频硬上限
+max_per_10min     = 12      # 每 10 分钟预算
+width             = 1280
+quality           = 3
+
+[notes]
+timecode = "mm:ss"       # 笔记里的时间戳格式
+include_speakers = false
+
+[slides]
+engine          = "marp"          # marp（默认，单文件离线）| reveal（逐页定制时）
+theme           = "light"         # light | dark
+theme_css       = "theme.css"     # 由 S5 生成到 slides 目录
+pdf             = true            # 同时导出 PDF（字体嵌入，适合分发）
+selfcheck_png   = true            # 用 marp --images png 逐页截图
+timelink        = true            # 每页时间戳跳回原视频
+video_url_base  = "../../videos"
+
+[run]
+log_level = "info"

@@ -1,0 +1,32 @@
+# 原始视频
+videos/*
+!videos/.gitkeep
+
+# 中间产物（可随时重建）
+work/*
+!work/.gitkeep
+
+# 交付物
+output/*
+!output/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node（M3 Marp 渲染）
+node_modules/
+
+# 调研缓存
+.research/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+
+# 本地模型
+models/
