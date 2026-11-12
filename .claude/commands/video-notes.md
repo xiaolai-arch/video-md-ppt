@@ -4,6 +4,8 @@ argument-hint: <视频路径> [--from sN] [--to sN] [--auto]
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
+> `--auto` 只是斜杠命令的宿主约定（等价于用户说“跳过确认”），不是 `scripts/*.py` 的参数。
+
 按仓库根目录 `AGENTS.md` 与 `prompts/` 执行完整流水线（本命令是 Claude Code 薄壳）。参数 `$ARGUMENTS`。
 
 1. **解析参数**：视频路径、`--from`/`--to`（s0–s5，默认 s0→s5）、`--auto`（跳过确认点）。

@@ -4,11 +4,14 @@ argument-hint: <slug | notes.md 路径> [--theme light|dark] [--auto]
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
+> `--auto` 只是斜杠命令的宿主约定（等价于用户说“跳过确认”），不是 `scripts/*.py` 的参数。
+
 执行 S5。参数 `$ARGUMENTS`。
 
 前置：`output/<slug>/notes.md` 已通过 S4 自检（`verify_notes.py` 为 PASS）；
 `work/<slug>/enrichment.md` 已通过 `check_enrichment.py`；
-`work/<slug>/fact-check.md` 已通过 `check_factcheck.py`。
+`work/<slug>/fact-check.md` 的 **A 轮预检**已通过（`check_factcheck.py --allow-no-slides`）。
+课件草稿写完后，还要跑 S4.6-B 逐页核查，再定稿渲染。
 
 1. **课时规划**：写 `work/<slug>/slide-plan.md`，每页包含：
    标题（结论式）/ 3–5 个要点 / 配图（来自 `notes.assets/`）/ 讲者备注 / 来源时间戳。

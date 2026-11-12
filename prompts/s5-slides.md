@@ -91,6 +91,9 @@ size: 16:9
 - `.why` `.compare` `.flow` `.panel` `.quiz` 等深挖页样式。
 - 16:9 安全区；内容底边不超过 656px（720px 高）。
 
+> Windows/PowerShell：`\` 续行改成单行命令；设置编码用 `$env:PYTHONIOENCODING='utf-8'`，
+> 不要用 `VAR=x cmd`。其余命令在 Git Bash / WSL / macOS / Linux 可直接跑。
+
 ### 4. 渲染
 
 ```bash
@@ -144,11 +147,14 @@ python scripts/check_slides.py "output/{{SLUG}}/slides"
 
 ```bash
 python scripts/check_slides.py "output/{{SLUG}}/slides"
-python scripts/gates.py "{{SLUG}}"
+python scripts/gates.py "{{SLUG}}"       # 第一次
+# 写完 report.md 后复跑
+python scripts/gates.py "{{SLUG}}"       # 第二次，以这次为准
 ```
 
 `output/{{SLUG}}/report.md` 记录：
 
+- 两次门禁结果（第一次与复跑），以最后一次为准
 - 页数、深挖页数、每页字数或密度
 - 溢出修正了哪些页、图片宽度改成多少
 - 核查问题数与处理结果

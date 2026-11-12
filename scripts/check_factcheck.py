@@ -118,11 +118,14 @@ def main() -> int:
 
     body = "\n".join(" ".join(r.values()) for r in rows)
 
-    if args.enrichment and args.enrichment.exists():
-        cards = CARD_RE.findall(args.enrichment.read_text(encoding="utf-8"))
-        missing = [c for c in cards if c not in body]
-        if missing:
-            errors.append(f"未核查的深挖卡：{', '.join(missing)}")
+    if args.enrichment:
+        if not args.enrichment.exists():
+            errors.append(f"--enrichment 路径不存在：{args.enrichment}")
+        else:
+            cards = CARD_RE.findall(args.enrichment.read_text(encoding="utf-8"))
+            missing = [c for c in cards if c not in body]
+            if missing:
+                errors.append(f"未核查的深挖卡：{', '.join(missing)}")
 
     if args.slides:
         if not args.slides.exists():

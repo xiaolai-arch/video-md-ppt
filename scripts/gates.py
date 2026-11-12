@@ -74,11 +74,21 @@ def check_one(slug: str, only: set[str], strict: bool) -> bool:
     results: dict[str, str] = {}
     details: list[str] = []
 
+    # 全量运行时，五道门禁缺一不可；01 是使用说明，没有深挖与核查，按设计豁免。
+    full_run = only == set(GATES)
+    expected = set(only)
+    if full_run and slug.startswith("01_"):
+        expected -= {"enrichment", "factcheck"}
+
     def gate(name: str, argv: list[str] | None) -> None:
         if name not in only:
             return
         if argv is None:
-            results[name] = "SKIP"
+            if full_run and name in expected:
+                results[name] = "FAIL"
+                details.append(f"--- {name} ---\n缺少必要产物")
+            else:
+                results[name] = "SKIP"
             return
         code, out = run(argv)
         results[name] = "PASS" if code == 0 else "FAIL"
@@ -131,7 +141,7 @@ def check_one(slug: str, only: set[str], strict: bool) -> bool:
         print("OVERALL FAIL: 没有任何门禁可跑（检查 slug、产物路径或 --only）")
         return False
     if skipped and strict:
-        failed.extend(f"{k}(SKIP)" for k in skipped)
+        failed.extend(f"{k}(SKIP)" for k in skipped if k in expected)
     if failed:
         print(f"OVERALL FAIL: {', '.join(failed)}")
         return False

@@ -4,6 +4,8 @@ argument-hint: <slug | 视频路径> [--auto] [--revise]
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
+> `--auto` 只是斜杠命令的宿主约定（等价于用户说“跳过确认”），不是 `scripts/*.py` 的参数。
+
 执行 S3–S4。参数 `$ARGUMENTS`。
 
 前置：`work/<slug>/transcript/transcript.txt` 存在；必要时用 `python scripts/status.py --slug <slug>` 确认。
@@ -25,10 +27,11 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep
    - 按 `prompts/s4.5-enrichment.md` 写 `work/<slug>/enrichment.md`：每个核心知识点一张卡，固定七字段。
    - 来源分级：〔视频〕带时间戳，〔推演〕能追到原规则，〔扩展〕是视频外标准知识。
    - 跑 `python scripts/check_enrichment.py work/<slug>/enrichment.md`，PASS 再进 S5。
-4. **S4.6 内容核查**
-   - 起独立子代理（不继承写作上下文）读 transcript/notes/enrichment/slides，按“假设有错”逐条挑错。
+4. **S4.6-A 内容核查（课件之前）**
+   - 起独立子代理（不继承写作上下文），只读 transcript/notes/enrichment，按“假设有错”逐条挑错。
    - 整理成 `work/<slug>/fact-check.md`，判定 OK/WEAK/ERROR/CONTESTED；ERROR 必改，CONTESTED 必须在课件可见处标注。
-   - 跑 `python scripts/check_factcheck.py ...`，PASS 才算完成。
+   - 跑 `check_factcheck.py --allow-no-slides`，PASS 才进 S5 草稿。
+   - 课件草稿写完后另起 S4.6-B 逐页核查，见 `/video-factcheck`。
 5. 最后汇报：章节数、字数、时间覆盖率、深挖卡数、核查问题数与处理结果。
 
 红线：视频原意不得改写；视频讲错或简化的地方要标出，不能照抄成结论；〔扩展〕内容不得冒充讲者观点。

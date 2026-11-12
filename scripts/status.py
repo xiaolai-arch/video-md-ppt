@@ -26,7 +26,10 @@ from common import (  # noqa: E402
 
 
 def stage_status(meta: Meta, stage: str, slug: str, work_root: Path, output_root: Path) -> str:
-    """s3–s5 由人工产出，没有 meta 记录时按产物是否存在判断。"""
+    """s3–s5 由人工产出，没有 meta 记录时按产物是否存在判断。
+
+    outline-decisions.md 是可选决策记录，不参与 s3 状态判断。
+    """
     status = meta.status(stage)
     if status != "pending":
         return status

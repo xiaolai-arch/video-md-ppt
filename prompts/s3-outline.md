@@ -14,7 +14,7 @@
 ## 输出
 
 - `work/{{SLUG}}/outline.md`
-- `work/{{SLUG}}/outline-decisions.md`（设计树追问的决策记录）
+- `work/{{SLUG}}/outline-decisions.md`（设计树追问的决策记录；可选，不参与门禁）
 
 ## 步骤
 

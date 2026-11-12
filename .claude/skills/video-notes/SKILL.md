@@ -19,17 +19,17 @@ description: 把本地视频转成带时间戳的 Markdown 笔记和离线 HTML 
 | 阶段 | 提示词 | 产物 |
 |---|---|---|
 | S0–S2 | `prompts/s0-s2-ingest.md` | `audio/`、`transcript/`、`frames/` |
-| S3 | `prompts/s3-outline.md` | `work/<slug>/outline.md` |
+| S3 | `prompts/s3-outline.md` | `work/<slug>/outline.md`（+ 可选决策记录） |
 | S4 | `prompts/s4-notes.md` | `output/<slug>/notes.md` |
 | S4.5 | `prompts/s4.5-enrichment.md` | `work/<slug>/enrichment.md` |
-| S4.6 | `prompts/s4.6-factcheck.md` | `work/<slug>/fact-check.md` |
+| S4.6-A/B | `prompts/s4.6-factcheck.md` | `work/<slug>/fact-check.md` |
 | S5 | `prompts/s5-slides.md` | `output/<slug>/slides/*` |
 
 ## Claude Code 专属
 
-- **S4.6 写查分离**：用 Agent 工具起一个不继承写作上下文的新 agent，只给
-  `transcript.txt`、`notes.md`、`enrichment.md`、`slides.md`，提示词用
-  `prompts/s4.6-factcheck.md`。不要自己查自己。
+- **S4.6 写查分离**：用 Agent 工具起一个不继承写作上下文的新 agent。A 轮在课件之前，
+  只给 `transcript.txt`、`notes.md`、`enrichment.md`；B 轮在课件草稿之后再加 `slides.md`。
+  提示词用 `prompts/s4.6-factcheck.md`，两轮都不要自己查自己。
 - **S3 盘问**：可调用 `outline-grill` 技能做设计树追问，决策写入 `outline-decisions.md`。
 - **门禁**：优先一条命令 `python scripts/gates.py <slug>`；单项脚本见 `AGENTS.md` §5。
 - **Windows**：IPA 输出报 GBK 编码错误时加 `PYTHONIOENCODING=utf-8`。

@@ -72,7 +72,7 @@ python scripts/status.py --slug <slug>
 | S0 预处理 | 脚本 | `python scripts/probe.py <video>` | `audio/audio.wav`、`meta.json` | `status.py` 显示 `s0=done` |
 | S1 转写 | 脚本 | `python scripts/transcribe.py <video>` | `transcript/*` | 同上 |
 | S2 抽帧 | 脚本 | `python scripts/keyframes.py <video>` | `frames/*.jpg` | 同上 |
-| S3 大纲 | agent | [`prompts/s3-outline.md`](prompts/s3-outline.md) | `outline.md` | `check_outline.py` |
+| S3 大纲 | agent | [`prompts/s3-outline.md`](prompts/s3-outline.md) | `outline.md`、`outline-decisions.md`（可选） | `check_outline.py` |
 | S4 笔记 | agent | [`prompts/s4-notes.md`](prompts/s4-notes.md) | `output/<slug>/notes.md` | `verify_notes.py` |
 | S4.5 深挖 | agent（推理层） | [`prompts/s4.5-enrichment.md`](prompts/s4.5-enrichment.md) | `enrichment.md` | `check_enrichment.py` |
 | S4.6 核查 | **独立 agent** + 作者 | [`prompts/s4.6-factcheck.md`](prompts/s4.6-factcheck.md) | `fact-check.md` | `check_factcheck.py`（两轮，见 §4.3） |
@@ -116,9 +116,9 @@ python scripts/keyframes.py videos/第3讲.mp4
 ## 5. 门禁：一条命令
 
 ```bash
-python scripts/gates.py <slug>          # 跑该集全部五道门禁
+python scripts/gates.py <slug>          # 全量：五道缺一即 FAIL（01 使用说明按设计豁免深挖/核查）
 python scripts/gates.py --all           # 全部课时
-python scripts/gates.py <slug> --strict # 缺产物也算 FAIL
+python scripts/gates.py <slug> --only notes --strict  # 只跑某项时，缺产物也 FAIL
 ```
 
 它统一解析课件源文件：**只认 `slides/slides.md`**，兼容旧的 `slides.rich.md` 并提示改名。
@@ -146,19 +146,18 @@ Windows 控制台遇到 IPA 字符报 `UnicodeEncodeError` 时，命令前加
 - 行尾 `\` 续行改为单行命令；
 - `ls | head` 改为 `Get-ChildItem | Select-Object -First 10`。
 
-`gates.py` 的退出码：0 全部通过；1 内容门禁失败；2 用法错误或文件缺失。
+`gates.py` 的退出码：0 全部通过；1 单元不存在或内容门禁失败；2 用法错误（未知门禁、缺 slug）。
 `check_factcheck.py` 缺 `--slides` 且没有 `--allow-no-slides` 时返回 2。
 
 ## 6. 写查分离（S4.6 的硬规则）
 
 **写的人和查的人必须是两个上下文。** 作者不能自己判"没问题"。
 
-核查 agent 只拿到四样东西：
+核查 agent 按轮次只拿这些文件，不要多拿：
 
-- `work/<slug>/transcript/transcript.txt`
-- `output/<slug>/notes.md`
-- `work/<slug>/enrichment.md`
-- `output/<slug>/slides/slides.md`
+- **A 轮（课件之前）**：`work/<slug>/transcript/transcript.txt`、`output/<slug>/notes.md`、
+  `work/<slug>/enrichment.md`
+- **B 轮（课件草稿之后）**：再加 `output/<slug>/slides/slides.md`
 
 不继承写作过程、不继承作者的自我解释。它以"假设一定有错"的姿态找：
 
@@ -170,8 +169,8 @@ Windows 控制台遇到 IPA 字符报 `UnicodeEncodeError` 时，命令前加
 它**只报告，不改文件**。作者逐条处理：`ERROR` 必改，`WEAK` 收紧，`CONTESTED` 在课件
 可见位置标注。视频本身讲错的，标"讲者的简化/口误"，不能照抄成结论。
 
-宿主怎么提供"独立上下文"见下一节。宿主没有子 agent 时，开一个新会话、只贴四个文件和
-提示词，也能达到同样的隔离。
+宿主怎么提供"独立上下文"见下一节。宿主没有子 agent 时，开一个新会话、只贴当前轮次需要的文件（A 轮三个，B 轮再加课件）
+和提示词，也能达到同样的隔离。
 
 ## 7. 产物与命名约定
 
@@ -202,10 +201,10 @@ Windows 控制台遇到 IPA 字符报 `UnicodeEncodeError` 时，命令前加
 | 宿主 | 做法 |
 |---|---|
 | Claude Code | 用 Agent 工具起一个**不继承上下文**的子 agent，提示词用 `prompts/s4.6-factcheck.md` |
-| Codex | 新开一个 `codex exec` 会话，只给四个文件路径和提示词 |
-| Gemini CLI | 新会话 `gemini -p`，只给四个文件路径和提示词 |
-| Orca | 另起一个 worker（最好是不同厂商的 agent），task 只含四个文件与提示词 |
-| 都没有 | 人工开新会话粘贴；或让另一个模型只读四文件出一份核查草稿 |
+| Codex | 新开一个 `codex exec` 会话：A 轮给三个文件，B 轮加 `slides.md` |
+| Gemini CLI | 新会话 `gemini -p`：A 轮三个文件，B 轮加 `slides.md` |
+| Orca | 另起一个 worker（最好跨厂商）：A、B 两轮各自独立，B 轮再加课件 |
+| 都没有 | 人工开新会话粘贴对应轮次的文件 |
 
 **不要**把作者的推理过程、辩解、"我已经检查过了"带给核查 agent。
 

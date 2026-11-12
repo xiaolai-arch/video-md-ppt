@@ -6,7 +6,7 @@
 | 文件 | 阶段 | 产物 |
 |---|---|---|
 | [`s0-s2-ingest.md`](s0-s2-ingest.md) | S0–S2 预处理、转写、抽帧 | `work/<slug>/audio`、`transcript`、`frames` |
-| [`s3-outline.md`](s3-outline.md) | S3 大纲 | `work/<slug>/outline.md` |
+| [`s3-outline.md`](s3-outline.md) | S3 大纲 | `work/<slug>/outline.md`（+ 可选 `outline-decisions.md`） |
 | [`s4-notes.md`](s4-notes.md) | S4 笔记 | `output/<slug>/notes.md` |
 | [`s4.5-enrichment.md`](s4.5-enrichment.md) | S4.5 知识深挖 | `work/<slug>/enrichment.md` |
 | [`s4.6-factcheck.md`](s4.6-factcheck.md) | S4.6 独立核查 | `work/<slug>/fact-check.md` |

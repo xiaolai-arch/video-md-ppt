@@ -58,9 +58,11 @@ def check(path: Path, min_cards: int) -> tuple[list[str], list[str]]:
             continue
         if not BADGE_RE.search(f["来源"]):
             errors.append(f"E「{title}」来源未标 〔视频〕/〔推演〕/〔扩展〕")
-        if f["对应视频"] != "无" and not TS_RE.search(f["对应视频"]):
+        if f["对应视频"].startswith("无"):
             if "〔扩展〕" not in f["来源"]:
-                errors.append(f"E「{title}」有视频字段但无 [mm:ss] 时间戳")
+                errors.append(f"E「{title}」对应视频写“无”，但来源未含〔扩展〕")
+        elif not TS_RE.search(f["对应视频"]):
+            errors.append(f"E「{title}」对应视频字段缺少 [mm:ss] 时间戳")
         if len(f["原理"]) < 30:
             warnings.append(f"E「{title}」原理偏短（{len(f['原理'])} 字）")
         if len(f["例"]) < 8:

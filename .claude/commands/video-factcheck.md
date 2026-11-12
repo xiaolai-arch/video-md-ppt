@@ -6,12 +6,17 @@ allowed-tools: Agent, Read, Write, Edit, Glob, Grep, Bash
 
 执行 S4.6 内容核查。参数 `$ARGUMENTS`（slug）。
 
-前置：`work/<slug>/enrichment.md` 已通过 `check_enrichment.py`；
-`output/<slug>/notes.md` 与 `output/<slug>/slides/slides.md` 已生成。
-课件源文件唯一 canonical 名为 `slides/slides.md`；旧名 `slides.rich.md` 已统一。
+本命令分两轮，按课件是否已生成自动判断：
 
-1. **起独立子代理**：用 Agent 起一个不继承当前推理上下文的核查员，只给它四个文件：
-   `transcript.txt`、`notes.md`、`enrichment.md`、`slides.md`。
+- **S4.6-A（`slides.md` 还不存在）**：只读 `transcript.txt`、`notes.md`、`enrichment.md`，
+  门禁用 `--allow-no-slides`。
+- **S4.6-B（`slides.md` 已生成）**：再加 `slides.md` 逐页查，门禁用 `--slides`。
+
+前置：`work/<slug>/enrichment.md` 已通过 `check_enrichment.py`；笔记已生成。
+课件源文件唯一 canonical 名为 `slides/slides.md`。
+
+1. **起独立子代理**：用 Agent 起一个不继承当前推理上下文的核查员。A 轮给三个文件
+   （`transcript.txt`、`notes.md`、`enrichment.md`）；B 轮再加 `slides.md`。
    提示词要求：
    - 假设一定有错，按 ERROR / WEAK / OK 判定；
    - 查事实错误、过度概括、争议规则、错误归因、内部矛盾、英文例句自然度；
