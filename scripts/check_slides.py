@@ -12,6 +12,7 @@ selfcheck.contact.png next to the pages.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -21,6 +22,9 @@ SAFE_BOTTOM = 656  # content must end above this y on a 720px-tall slide
 DIFF_THRESHOLD = 18
 CONTACT_COLS = 4
 THUMB_W = 480
+SLIDE_W = 1280
+IMG_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
+WIDTH_RE = re.compile(r"\bw:(\d+)")
 
 
 def content_bottom(im: Image.Image) -> int | None:
@@ -62,6 +66,68 @@ def content_bottom(im: Image.Image) -> int | None:
     return 0
 
 
+def deck_source(slides_dir: Path) -> Path | None:
+    for name in ("slides.md", "slides.rich.md"):
+        candidate = slides_dir / name
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def iter_deck_images(md: Path):
+    """Yield (page, alt, src, declared_width) for every Markdown image."""
+    text = md.read_text(encoding="utf-8")
+    parts = text.split("\n---\n")
+    if parts and parts[0].lstrip().startswith("---"):
+        parts = parts[1:]
+    for i, part in enumerate(parts, start=1):
+        for match in IMG_RE.finditer(part):
+            alt = match.group(1).strip()
+            src = match.group(2).strip().strip("<>")
+            width_match = WIDTH_RE.search(alt)
+            yield i, alt, src, int(width_match.group(1)) if width_match else None
+
+
+def check_images(slides_dir: Path) -> tuple[list[str], list[str], list[str]]:
+    """校验课件引用的图片：存在、非外链、未被放大、alt 非空。
+
+    只做确定性判断。图片是否“文字太小/被裁切”仍要人看联系表：
+    check_slides 会把每张图的原始尺寸与渲染宽度列出来，方便逐张核对。
+    """
+    md = deck_source(slides_dir)
+    if md is None:
+        return [], [], ["  (未找到 slides.md / slides.rich.md，跳过图片检查)"]
+
+    errors: list[str] = []
+    warnings: list[str] = []
+    inventory: list[str] = []
+    for page, alt, src, width in iter_deck_images(md):
+        if re.match(r"^(?:https?:)?//", src):
+            errors.append(f"p{page} 外链图片（断网会失效）：{src}")
+            continue
+        if src.startswith("data:"):
+            continue
+        path = (md.parent / src).resolve()
+        if not path.exists():
+            errors.append(f"p{page} 图片不存在：{src}")
+            continue
+        try:
+            with Image.open(path) as im:
+                natural_w, natural_h = im.size
+        except Exception as exc:  # noqa: BLE001 - 任何解码失败都算坏图
+            errors.append(f"p{page} 图片无法读取：{src}（{exc}）")
+            continue
+
+        label = WIDTH_RE.sub("", alt).strip()
+        shown = f"w:{width}" if width else "auto"
+        inventory.append(f"  p{page:<3} {path.name:<32} {natural_w}x{natural_h} -> {shown}")
+        if not label:
+            warnings.append(f"p{page} 图片缺少 alt 文本：{src}")
+        if width and width > natural_w * 1.05:
+            warnings.append(f"p{page} 图片被放大 {natural_w}->{width}px，会发虚：{path.name}")
+    return errors, warnings, inventory
+
+
 def build_contact(pages: list[Path], out: Path) -> None:
     if not pages:
         return
@@ -93,6 +159,11 @@ def main() -> int:
     ap.add_argument("slides_dir", type=Path)
     ap.add_argument("--safe-bottom", type=int, default=SAFE_BOTTOM)
     ap.add_argument("--contact-cols", type=int, default=CONTACT_COLS)
+    ap.add_argument(
+        "--strict-images",
+        action="store_true",
+        help="图片告警（缺 alt、被放大）也判 FAIL",
+    )
     args = ap.parse_args()
 
     CONTACT_COLS = args.contact_cols
@@ -120,11 +191,27 @@ def main() -> int:
             failures += 1
         print(f"{page.name}  {im.width}x{im.height}  bottom={bottom}{flag}")
 
+    img_errors, img_warnings, inventory = check_images(args.slides_dir)
+    if inventory:
+        print("images:")
+        print("\n".join(inventory))
+    for warning in img_warnings:
+        print(f"WARN image: {warning}")
+    for error in img_errors:
+        print(f"FAIL image: {error}")
+
     contact = args.slides_dir / "selfcheck.contact.png"
     build_contact(pages, contact)
     print(f"contact: {contact}")
-    print(f"OVERALL {'FAIL' if failures else 'PASS'}  ({failures} page(s) past {args.safe_bottom}px)")
-    return 1 if failures else 0
+    failed = failures + len(img_errors)
+    if args.strict_images:
+        failed += len(img_warnings)
+    print(
+        f"OVERALL {'FAIL' if failed else 'PASS'}  "
+        f"({failures} page(s) past {args.safe_bottom}px, "
+        f"{len(img_errors)} image error(s), {len(img_warnings)} warning(s))"
+    )
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

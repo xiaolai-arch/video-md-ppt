@@ -23,7 +23,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+CODE_ROOT = Path(__file__).resolve().parent.parent
 PY = sys.executable
 
 GATES = {
@@ -35,11 +35,19 @@ GATES = {
 }
 
 
+def expected_gates(slug: str, only: set[str]) -> set[str]:
+    """全量运行时，五道门禁缺一不可；01 是使用说明，按设计豁免深挖与核查。"""
+    expected = set(only)
+    if only == set(GATES) and slug.startswith("01_"):
+        expected -= {"enrichment", "factcheck"}
+    return expected
+
+
 def run(args: list[str]) -> tuple[int, str]:
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
     proc = subprocess.run(
         [PY, *args],
-        cwd=ROOT,
+        cwd=CODE_ROOT,
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -60,9 +68,9 @@ def resolve_slides(slug_dir: Path) -> tuple[Path | None, str]:
     return None, "找不到课件源文件"
 
 
-def check_one(slug: str, only: set[str], strict: bool) -> bool:
-    slug_dir = ROOT / "output" / slug
-    work_dir = ROOT / "work" / slug
+def check_one(slug: str, only: set[str], strict: bool, root: Path) -> bool:
+    slug_dir = root / "output" / slug
+    work_dir = root / "work" / slug
     if not slug_dir.exists():
         print(f"FAIL {slug}: output/{slug} 不存在")
         return False
@@ -76,9 +84,7 @@ def check_one(slug: str, only: set[str], strict: bool) -> bool:
 
     # 全量运行时，五道门禁缺一不可；01 是使用说明，没有深挖与核查，按设计豁免。
     full_run = only == set(GATES)
-    expected = set(only)
-    if full_run and slug.startswith("01_"):
-        expected -= {"enrichment", "factcheck"}
+    expected = expected_gates(slug, only)
 
     def gate(name: str, argv: list[str] | None) -> None:
         if name not in only:
@@ -102,18 +108,30 @@ def check_one(slug: str, only: set[str], strict: bool) -> bool:
     factcheck = work_dir / "fact-check.md"
     slides_dir = slug_dir / "slides"
 
-    gate("outline", ["scripts/check_outline.py", str(outline), "--slug", slug] if outline.exists() else None)
-    gate("notes", ["scripts/verify_notes.py", str(notes), "--slug", slug] if notes.exists() else None)
+    gate(
+        "outline",
+        [str(CODE_ROOT / "scripts/check_outline.py"), str(outline), "--slug", slug]
+        if outline.exists()
+        else None,
+    )
+    gate(
+        "notes",
+        [str(CODE_ROOT / "scripts/verify_notes.py"), str(notes), "--slug", slug]
+        if notes.exists()
+        else None,
+    )
     gate(
         "enrichment",
-        ["scripts/check_enrichment.py", str(enrichment)] if enrichment.exists() else None,
+        [str(CODE_ROOT / "scripts/check_enrichment.py"), str(enrichment)]
+        if enrichment.exists()
+        else None,
     )
     if factcheck.exists():
         # 即使课件源缺失也要把 --slides 传进去：check_factcheck 会因此 FAIL，
         # 而不是静默跳过扩展页覆盖检查。
         slide_arg = slides or (slides_dir / "slides.md")
         argv = [
-            "scripts/check_factcheck.py",
+            str(CODE_ROOT / "scripts/check_factcheck.py"),
             str(factcheck),
             "--enrichment",
             str(enrichment),
@@ -125,7 +143,10 @@ def check_one(slug: str, only: set[str], strict: bool) -> bool:
         gate("factcheck", None)
 
     has_png = bool(list(slides_dir.glob("selfcheck.*"))) if slides_dir.exists() else False
-    gate("slides", ["scripts/check_slides.py", str(slides_dir)] if has_png else None)
+    gate(
+        "slides",
+        [str(CODE_ROOT / "scripts/check_slides.py"), str(slides_dir)] if has_png else None,
+    )
 
     for name in GATES:
         if name in results:
@@ -155,6 +176,12 @@ def main() -> int:
     ap.add_argument("--all", action="store_true", help="遍历 output/ 下所有课时")
     ap.add_argument("--only", default=",".join(GATES), help="逗号分隔：outline,notes,enrichment,factcheck,slides")
     ap.add_argument("--strict", action="store_true", help="缺产物也判 FAIL")
+    ap.add_argument(
+        "--root",
+        type=Path,
+        default=CODE_ROOT,
+        help="数据根目录（含 output/ 与 work/），默认仓库根；测试用",
+    )
     args = ap.parse_args()
 
     only = {x.strip() for x in args.only.split(",") if x.strip()}
@@ -163,8 +190,13 @@ def main() -> int:
         print(f"未知门禁：{', '.join(sorted(unknown))}")
         return 2
 
+    root: Path = args.root.resolve()
     if args.all:
-        slugs = sorted(p.name for p in (ROOT / "output").iterdir() if p.is_dir())
+        out_dir = root / "output"
+        if not out_dir.exists():
+            print(f"找不到 {out_dir}")
+            return 1
+        slugs = sorted(p.name for p in out_dir.iterdir() if p.is_dir())
     elif args.slug:
         slugs = [args.slug]
     else:
@@ -174,7 +206,7 @@ def main() -> int:
     ok = True
     summary: list[tuple[str, str]] = []
     for slug in slugs:
-        passed = check_one(slug, only, args.strict)
+        passed = check_one(slug, only, args.strict, root)
         ok = ok and passed
         summary.append((slug, "PASS" if passed else "FAIL"))
 

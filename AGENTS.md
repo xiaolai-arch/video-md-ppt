@@ -152,6 +152,30 @@ Windows 控制台遇到 IPA 字符报 `UnicodeEncodeError` 时，命令前加
 `gates.py` 的退出码：0 全部通过；1 单元不存在或内容门禁失败；2 用法错误（未知门禁、缺 slug）。
 `check_factcheck.py` 缺 `--slides` 且没有 `--allow-no-slides` 时返回 2。
 
+### 5.1 门禁自身也要有回归测试
+
+改 `scripts/` 下任何门禁后，必须跑：
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+测试覆盖三类历史事故：`check_factcheck.py` 静默跳过（缺 `--slides`、路径不存在、扩展页未覆盖）、
+`gates.py` 全 SKIP 假通过/缺产物、`check_slides.py` 图片检查（缺图、外链、被放大）。
+CI 在 [`.github/workflows/tests.yml`](.github/workflows/tests.yml) 跑同一套测试；
+测试只用标准库 + Pillow，不读真实 `work/` 与 `output/`。
+
+### 5.2 check_slides.py 的图片检查
+
+除逐页测量溢出，还会读 `slides/slides.md` 并逐张核对图片：
+
+- 图片不存在、外链 → FAIL；
+- 缺 alt、声明宽度大于原图（会发虚）→ WARN；加 `--strict-images` 时计入 FAIL；
+- 同时打印图片清单（页号、原始尺寸、渲染宽度），供联系表复查。
+
+图片是否“文字太小 / 底部被控件的裁切”仍需人眼或视觉 agent 看 `selfcheck.contact.png`；
+脚本只保证图片完整、可离线、不被放大，不假装能判断可读性。
+
 ## 6. 写查分离（S4.6 的硬规则）
 
 **写的人和查的人必须是两个上下文。** 作者不能自己判"没问题"。

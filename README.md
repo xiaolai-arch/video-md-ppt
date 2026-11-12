@@ -21,6 +21,7 @@ Claude Code、Codex、Gemini CLI、Cursor、Orca worker 都能跑。
 
 > 01《使用说明》是课程介绍，按设计不做深挖与内容核查；`gates.py` 对 `01_` 前缀自动豁免这两项。
 > 交付范围与各集已知局限见 [`output/课程说明.md`](output/课程说明.md)。
+> **使用范围**：笔记与课件是对付费课程的个人学习整理，不含原视频；仅供个人学习，不用于商业培训或公开再分发。
 
 ## 技术选型（摘要）
 
@@ -56,6 +57,9 @@ python scripts/build_index.py
 
 # 打包交付物（HTML + PDF + 笔记 + 报告）
 python scripts/package.py
+
+# 门禁自身的回归测试（改 scripts/ 前后都跑）
+python -m unittest discover -s tests -v
 ```
 
 单项门禁（调试时用；内容失败退出码 1，缺文件/用法错误退出码 2）：

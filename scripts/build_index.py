@@ -194,7 +194,8 @@ def build_html(rows: list[dict]) -> str:
 {chr(10).join(cards)}
   </ul>
   <footer>由 <code>scripts/build_index.py</code> 生成。索引不内嵌课件，链接指向同目录下的文件。
-    交付范围与已知局限见 <a href="课程说明.md">课程交付说明</a>。</footer>
+    交付范围与已知局限见 <a href="课程说明.md">课程交付说明</a>。
+    内容整理自付费课程，仅供个人学习，不用于商业培训或公开再分发。</footer>
 </div>
 </body>
 </html>
@@ -220,6 +221,11 @@ def build_markdown(rows: list[dict]) -> str:
             f"| {r['num']} | {r['title']} | {human_duration(r['duration'])} | {r['pages'] or '—'} | "
             f"{r['deep'] or '—'} | {links[0]} | {links[1]} / {links[2]} | {links[3]} |"
         )
+    lines.append("")
+    lines.append(
+        "> 内容整理自付费课程，仅供个人学习，不用于商业培训或公开再分发。"
+        "使用范围与已知局限见 [课程说明.md](课程说明.md)。"
+    )
     lines.append("")
     return "\n".join(lines)
 

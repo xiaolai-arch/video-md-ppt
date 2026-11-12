@@ -126,8 +126,9 @@ npx -y @marp-team/marp-cli@4.5.1 --no-stdin "output/{{SLUG}}/slides/slides.md" \
 python scripts/check_slides.py "output/{{SLUG}}/slides"
 ```
 
-`check_slides.py` 只测**版式溢出**并生成联系表；下面这些必须人工核对，不能因为门禁 PASS
-就当作全部验收：
+`check_slides.py` 测**版式溢出**并生成联系表，同时逐张核对图片引用（缺失、外链、被放大、
+缺 alt）并打印图片清单（页号、原始尺寸、渲染宽度）。下面这些仍须人工核对，
+不能因为门禁 PASS 就当作全部验收：
 
 - [ ] 断网双击 `index.html` 可放映，DevTools 无 404
 - [ ] HTML 无外链、无 CDN；图片已内联
@@ -137,6 +138,7 @@ python scripts/check_slides.py "output/{{SLUG}}/slides"
 - [ ] 深挖页 ≥30%（按 `slide-plan.md` 的 ★ 统计）
 - [ ] `fact-check.md` 的 ERROR 全改完，CONTESTED 在页面可见处标注
 - [ ] 联系表无断行、缺图、版面失衡
+- [ ] 对照图片清单逐张确认：图内文字可读、底部没有被播放器控件或裁切截断
 
 - 逐页量内容底边，超过 656px 的页要缩图或拆页，直到 0 页越线。
 - 抽查 10 页：〔视频〕时间戳能对上转写。
@@ -163,7 +165,7 @@ python scripts/gates.py "{{SLUG}}"       # 第二次，以这次为准
 
 ## 完成标准
 
-- `check_slides.py` PASS（0 页越线）
+- `check_slides.py` PASS（0 页越线、0 image error）
 - 上面的人工检查表逐项打勾
 - HTML 单文件、断网可开、无外链
 - PDF 页数正确、带备注
