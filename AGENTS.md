@@ -37,6 +37,7 @@ work/<slug>/            中间产物（可重建）
   transcript/           S1：transcript.{txt,json,srt}
   frames/               S2：关键帧 + index.json
   outline.md            S3
+  outline-decisions.md  S3 设计树追问的决策记录
   enrichment.md         S4.5
   fact-check.md         S4.6
   slide-plan.md         S5 规划
@@ -74,7 +75,7 @@ python scripts/status.py --slug <slug>
 | S3 大纲 | agent | [`prompts/s3-outline.md`](prompts/s3-outline.md) | `outline.md` | `check_outline.py` |
 | S4 笔记 | agent | [`prompts/s4-notes.md`](prompts/s4-notes.md) | `output/<slug>/notes.md` | `verify_notes.py` |
 | S4.5 深挖 | agent（推理层） | [`prompts/s4.5-enrichment.md`](prompts/s4.5-enrichment.md) | `enrichment.md` | `check_enrichment.py` |
-| S4.6 核查 | **独立 agent** + 作者 | [`prompts/s4.6-factcheck.md`](prompts/s4.6-factcheck.md) | `fact-check.md` | `check_factcheck.py` |
+| S4.6 核查 | **独立 agent** + 作者 | [`prompts/s4.6-factcheck.md`](prompts/s4.6-factcheck.md) | `fact-check.md` | `check_factcheck.py`（两轮，见 §4.3） |
 | S5 课件 | agent | [`prompts/s5-slides.md`](prompts/s5-slides.md) | `slides/*` | `check_slides.py` |
 
 设计原则：**脚本只做确定性的事，agent 只做判断的事。**
@@ -95,6 +96,22 @@ python scripts/keyframes.py videos/第3讲.mp4
 
 把对应 `prompts/*.md` 的内容作为任务说明交给 agent，替换 `{{SLUG}}` / `{{VIDEO}}`。
 每个提示词都自带输入、步骤、门禁和停止条件，可以单独执行。
+
+### 4.3 S4.6 与 S5 的两轮顺序（避免循环依赖）
+
+核查要覆盖课件页，但课件又要在核查通过后才能定稿——这不是死循环，而是**两轮**：
+
+1. **S4.6-A（课件之前）**：核查 `transcript` / `notes.md` / `enrichment.md`。
+   这一轮不要传 `--slides`，只保证笔记与深挖没有硬错误。
+2. **S5 草稿**：写 `slide-plan.md` 与 `slides/slides.md`，先不要导出最终 HTML/PDF。
+3. **S4.6-B（草稿之后）**：另起一个独立上下文，逐页核查 `slides.md`，
+   每个 `src ext` 页都要有一行 `课件 pN`；把结果追加到同一张 `fact-check.md`。
+4. **处理 + 定稿**：改完 ERROR、收紧 WEAK、标注 CONTESTED，再渲染 HTML/PDF/PNG。
+5. **总门禁**：`python scripts/gates.py <slug>`，此时 `--slides` 必须存在，
+   覆盖笔记、深挖、全部扩展页与版式。
+
+**不要**把 S4.6-A 当成完整核查就进入定稿；也不要因为课件还没写就跳过 B 轮。
+两轮的核查员都必须与作者隔离。
 
 ## 5. 门禁：一条命令
 
@@ -122,6 +139,15 @@ python scripts/check_slides.py output/<slug>/slides
 
 Windows 控制台遇到 IPA 字符报 `UnicodeEncodeError` 时，命令前加
 `PYTHONIOENCODING=utf-8`（PowerShell：`$env:PYTHONIOENCODING='utf-8'`）。
+
+上面的 bash 示例在 Git Bash / WSL / macOS / Linux 可直接跑。在 PowerShell 里：
+
+- `VAR=x cmd` 改为先 `$env:VAR='x'`，再另起一行 `cmd`；
+- 行尾 `\` 续行改为单行命令；
+- `ls | head` 改为 `Get-ChildItem | Select-Object -First 10`。
+
+`gates.py` 的退出码：0 全部通过；1 内容门禁失败；2 用法错误或文件缺失。
+`check_factcheck.py` 缺 `--slides` 且没有 `--allow-no-slides` 时返回 2。
 
 ## 6. 写查分离（S4.6 的硬规则）
 
@@ -187,7 +213,7 @@ Windows 控制台遇到 IPA 字符报 `UnicodeEncodeError` 时，命令前加
 
 用户已授权用 Orca 编排 worker 开发。建议分工：
 
-- 写作类阶段（S3–S5）可以由一个 worker 顺序做，保持同一上下文里的大纲一致性。
+- 写作类阶段（S3–S4.5，以及 S5 的写作部分）可以由一个 worker 顺序做，保持大纲与文风一致。
 - S4.6 必须换一个 worker / 会话，最好换一个厂商（Claude 写、Codex 查，或反之）。
 - 机械任务（重命名、跑门禁、生成索引）交给脚本，不派 agent。
 
@@ -200,13 +226,13 @@ Windows 控制台遇到 IPA 字符报 `UnicodeEncodeError` 时，命令前加
 - 图片必须本地存在；课件禁止外链、CDN；断网必须能打开。
 - 不修改上游产物（`audio/`、`transcript/*.json` 等）；要改就重跑对应阶段。
 - 门禁失败时修内容，不改门禁来迁就内容。
-- 每集结束重跑 `python scripts/gates.py <slug>`，并在 `report.md` 记录结果。
+- 每集定稿顺序：`check_slides.py` → `gates.py <slug>` → 写 `report.md` → 再跑一次 `gates.py`，以最后一次为准。
 - 产物变化后跑 `python scripts/build_index.py` 更新总索引。
 
 ## 10. 交互与停止点
 
-- **S3 结束必须停下等用户确认**（除非用户明确说 `--auto` / 跳过）。
-- S5 开始前先写 `slide-plan.md`，等确认页数与顺序（除非 `--auto`）。
+- **S3 结束必须停下等用户确认**（除非用户在任务里明确写"跳过确认"/AUTO）。
+- S5 开始前先写 `slide-plan.md`，等确认页数与顺序（除非用户在任务里明确写"跳过确认"/AUTO）。
 - 其余阶段失败可重试；不要静默跳过。
 - 汇报时给：章节数、字数、时间覆盖率、深挖卡数、核查行数与处理结果、课件页数与深挖页数、门禁结论。
 
@@ -216,9 +242,12 @@ Windows 控制台遇到 IPA 字符报 `UnicodeEncodeError` 时，命令前加
 status.py → probe/transcribe/keyframes → s3-outline → check_outline
 → 等确认 → s4-notes → verify_notes
 → s4.5-enrichment → check_enrichment
-→ s4.6-factcheck（独立上下文）→ check_factcheck
-→ s5-slides（先 slide-plan，等确认）→ check_slides
-→ report.md → gates.py <slug> → build_index.py → package.py
+→ s4.6-A 核查笔记与深挖（独立上下文）→ check_factcheck --allow-no-slides
+→ s5-slides 草稿（先 slide-plan，等确认）
+→ s4.6-B 逐页核查课件（另一个独立上下文）→ check_factcheck --slides
+→ 修内容、定稿渲染 → check_slides
+→ gates.py <slug> → report.md → gates.py <slug>（以最后一次为准）
+→ build_index.py → package.py
 ```
 
 任何一步失败，先修因，再重跑该步及其下游。

@@ -17,13 +17,15 @@
 - `{{VIDEO}}`：视频路径，例如 `videos/第3讲.mp4`
 - `{{SLUG}}`：工作区名，例如 `03_动词2_..._c8ee0760`；不确定时跑 `python scripts/status.py`
 
-通用约束见 [`../AGENTS.md`](../AGENTS.md)。每个阶段结束都跑
-`python scripts/gates.py {{SLUG}}`，不要只看脚本退出码就宣布完成。
+通用约束见 [`../AGENTS.md`](../AGENTS.md)。**最终门禁**在 S4.6-B 与 S5 定稿之后跑
+`python scripts/gates.py {{SLUG}}`；S0–S2、S3 之后还没有 `output/<slug>/`，
+跑全量门禁只会得到 SKIP，不要用它宣布完成。
 
 ## 组合方式
 
 - **单阶段**：只把对应文件交给 agent，适合修某一层。
-- **全流程**：按 `s0-s2 → s3 → s4 → s4.5 → s4.6 → s5` 顺序执行；S3 与 S5 前停下等确认。
+- **全流程**：按 `s0-s2 → s3 → s4 → s4.5 → s4.6-A → s5 草稿 → s4.6-B → s5 定稿`
+  顺序执行；S3 与 S5 前停下等确认。
 - **独立核查**：S4.6 必须换一个上下文；见 `AGENTS.md` §8.1。
 - **Orca**：写作 worker 与核查 worker 分开，最好不同厂商。
 

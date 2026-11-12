@@ -189,7 +189,7 @@ def build_html(rows: list[dict]) -> str:
     <h1>四级课程课件索引</h1>
     <p>视频 → 带时间戳的 Markdown 笔记 → 离线 HTML / PDF 课件</p>
   </header>
-  <p class="summary">{len(rows)} 集 · 视频共 {total_min:.0f} 分钟 · 课件共 {total_pages} 页。所有门禁已通过；点击链接直接打开本地文件。</p>
+  <p class="summary">{len(rows)} 集 · 视频共 {total_min:.0f} 分钟 · 课件共 {total_pages} 页。门禁结果见各集 <code>report.md</code>；点击链接直接打开本地文件。</p>
   <ul>
 {chr(10).join(cards)}
   </ul>

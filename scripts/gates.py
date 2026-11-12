@@ -99,9 +99,17 @@ def check_one(slug: str, only: set[str], strict: bool) -> bool:
         ["scripts/check_enrichment.py", str(enrichment)] if enrichment.exists() else None,
     )
     if factcheck.exists():
-        argv = ["scripts/check_factcheck.py", str(factcheck), "--enrichment", str(enrichment)]
-        if slides is not None:
-            argv += ["--slides", str(slides)]
+        # 即使课件源缺失也要把 --slides 传进去：check_factcheck 会因此 FAIL，
+        # 而不是静默跳过扩展页覆盖检查。
+        slide_arg = slides or (slides_dir / "slides.md")
+        argv = [
+            "scripts/check_factcheck.py",
+            str(factcheck),
+            "--enrichment",
+            str(enrichment),
+            "--slides",
+            str(slide_arg),
+        ]
         gate("factcheck", argv)
     else:
         gate("factcheck", None)
@@ -119,6 +127,9 @@ def check_one(slug: str, only: set[str], strict: bool) -> bool:
 
     failed = [k for k, v in results.items() if v == "FAIL"]
     skipped = [k for k, v in results.items() if v == "SKIP"]
+    if results and len(skipped) == len(results):
+        print("OVERALL FAIL: 没有任何门禁可跑（检查 slug、产物路径或 --only）")
+        return False
     if skipped and strict:
         failed.extend(f"{k}(SKIP)" for k in skipped)
     if failed:

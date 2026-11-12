@@ -21,7 +21,7 @@ FIELD_RE = re.compile(r"^[-*]\s*\*\*(对应视频|一句话|原理|例|易错|�
 TS_RE = re.compile(r"\[\d{1,2}:\d{2}(?::\d{2})?\]")
 BADGE_RE = re.compile(r"〔(视频|推演|扩展)[^〕]*〕")
 
-REQUIRED = ["一句话", "原理", "例", "易错", "迁移", "来源"]
+REQUIRED = ["对应视频", "一句话", "原理", "例", "易错", "迁移", "来源"]
 
 
 def parse_cards(text: str) -> list[dict]:
@@ -58,7 +58,7 @@ def check(path: Path, min_cards: int) -> tuple[list[str], list[str]]:
             continue
         if not BADGE_RE.search(f["来源"]):
             errors.append(f"E「{title}」来源未标 〔视频〕/〔推演〕/〔扩展〕")
-        if "对应视频" in f and not TS_RE.search(f["对应视频"]):
+        if f["对应视频"] != "无" and not TS_RE.search(f["对应视频"]):
             if "〔扩展〕" not in f["来源"]:
                 errors.append(f"E「{title}」有视频字段但无 [mm:ss] 时间戳")
         if len(f["原理"]) < 30:

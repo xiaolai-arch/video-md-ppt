@@ -5,6 +5,14 @@
 你是这条流水线的执行者。S0–S2 是**确定性工作**，全部交给脚本；你负责运行、核对产物、
 在失败时定位原因。不要手写转写、不要自己挑帧图。
 
+## 运行环境
+
+以下命令用 POSIX 写法（Git Bash / WSL / macOS / Linux）。PowerShell 里：
+
+- 设置环境变量：`$env:PYTHONIOENCODING='utf-8'`（不要用 `VAR=x cmd`）；
+- 行尾 `\` 续行改为单行；
+- `ls ... | head` 改为 `Get-ChildItem ... | Select-Object -First 10`。
+
 ## 输入
 
 - 视频：`{{VIDEO}}`（本地文件）
@@ -48,7 +56,7 @@
    ```bash
    python scripts/status.py --slug "{{SLUG}}"
    ls work/{{SLUG}}/transcript/
-   ls work/{{SLUG}}/frames/ | head
+   ls work/{{SLUG}}/frames/ | head   # PowerShell: Get-ChildItem work/{{SLUG}}/frames | Select-Object -First 10
    ```
 
 6. 汇报给用户：

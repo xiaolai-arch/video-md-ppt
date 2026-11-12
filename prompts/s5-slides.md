@@ -9,7 +9,7 @@
 
 - `output/{{SLUG}}/notes.md`（已通过 `verify_notes.py`）
 - `work/{{SLUG}}/enrichment.md`（已通过 `check_enrichment.py`）
-- `work/{{SLUG}}/fact-check.md`（已通过 `check_factcheck.py`）
+- `work/{{SLUG}}/fact-check.md`（**A 轮**预检已通过：笔记与深挖）
 - `output/{{SLUG}}/notes.assets/*.jpg`
 - 规范：`docs/需求文档.md` §9
 
@@ -41,7 +41,7 @@ output/{{SLUG}}/slides/
 - ★ 标深挖页；⚠ 标有争议页。
 - 45 分钟课通常 40–60 页；深挖页占 30%–50%。
 - 每个核心知识点至少一页"为什么 / 怎么错 / 怎么迁移"。
-- **停下等用户确认页数与顺序**（除非用户明确 `--auto`）。
+- **停下等用户确认页数与顺序**（除非用户在任务里明确写"跳过确认"）。
 
 ### 2. 写 `slides.md`
 
@@ -59,6 +59,9 @@ size: 16:9
 # 标题
 <div class="subtitle">副标题</div>
 
+<span class="src video">视频 00:00</span>
+<!-- 讲者备注：开场怎么讲、这一节的预期是什么 -->
+
 ---
 
 # 结论式标题
@@ -70,7 +73,7 @@ size: 16:9
 <!-- 讲者备注：先问学生…… -->
 ```
 
-- 每页角标来源：
+- 每页（包括封面）都要有来源角标和讲者备注。角标写法：
   - `<span class="src video">视频 12:34</span>`
   - `<span class="src infer">推演</span>`
   - `<span class="src ext">扩展</span>`
@@ -108,19 +111,41 @@ npx -y @marp-team/marp-cli@4.5.1 --no-stdin "output/{{SLUG}}/slides/slides.md" \
 - `inline_assets.py` **必须跑**：Marp 默认只写相对路径，不内联就不是真单文件。
 - 约束：单文件、零外链、禁止 CDN、断网可开。
 
-### 5. 自检
+### 5. 草稿、页级核查、定稿
+
+1. 先写 `slides.md` 草稿，不导出最终文件。
+2. 交给**另一个独立上下文**做 S4.6-B 页级核查（见 `prompts/s4.6-factcheck.md`）。
+3. 改完 ERROR、WEAK、CONTESTED 后，再渲染 HTML/PDF/PNG。
+
+### 6. 自检
 
 ```bash
 python scripts/check_slides.py "output/{{SLUG}}/slides"
 ```
 
-- 逐页量内容底边，超过 656px 的页要缩图或拆页，直到 0 页越线。
-- 看 `selfcheck.contact.png` 联系表，检查断行、缺图、版面失衡。
-- 抽查 10 页：〔视频〕时间戳能对上转写；〔扩展〕页没有"视频里说"。
-- 核对 `fact-check.md`：ERROR 全改完，CONTESTED 在页面可见处标注。
-- 改完内容必须**重渲染 HTML/PDF/PNG**，再跑一次门禁。
+`check_slides.py` 只测**版式溢出**并生成联系表；下面这些必须人工核对，不能因为门禁 PASS
+就当作全部验收：
 
-### 6. 写报告
+- [ ] 断网双击 `index.html` 可放映，DevTools 无 404
+- [ ] HTML 无外链、无 CDN；图片已内联
+- [ ] PDF 页数正确，`P` 键 presenter 备注可见
+- [ ] 每页（含封面）都有来源角标与讲者备注
+- [ ] 〔扩展〕页没有"视频里说"
+- [ ] 深挖页 ≥30%（按 `slide-plan.md` 的 ★ 统计）
+- [ ] `fact-check.md` 的 ERROR 全改完，CONTESTED 在页面可见处标注
+- [ ] 联系表无断行、缺图、版面失衡
+
+- 逐页量内容底边，超过 656px 的页要缩图或拆页，直到 0 页越线。
+- 抽查 10 页：〔视频〕时间戳能对上转写。
+
+### 7. 门禁与报告（顺序固定）
+
+先跑门禁，再写报告，最后复跑一次，以最后一次为准：
+
+```bash
+python scripts/check_slides.py "output/{{SLUG}}/slides"
+python scripts/gates.py "{{SLUG}}"
+```
 
 `output/{{SLUG}}/report.md` 记录：
 
@@ -133,15 +158,17 @@ python scripts/check_slides.py "output/{{SLUG}}/slides"
 ## 完成标准
 
 - `check_slides.py` PASS（0 页越线）
+- 上面的人工检查表逐项打勾
 - HTML 单文件、断网可开、无外链
 - PDF 页数正确、带备注
 - 每页有来源角标和讲者备注
 - 深挖页 ≥30%
-- `gates.py {{SLUG}}` 全 PASS
+- `gates.py {{SLUG}}` 全 PASS，且报告写完后复跑仍 PASS
 
 ## 红线
 
 - 视频原意不得改写；〔扩展〕不能伪装成讲者观点。
 - 已知错误不得带进课件。
+- 不把 `check_slides.py` PASS 当成全部验收通过。
 - 不为凑页数灌水；宁可少而实。
 - 不靠缩小字号塞内容；宁可拆页。

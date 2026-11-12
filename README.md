@@ -45,7 +45,7 @@ python scripts/keyframes.py videos/第3讲.mp4   # S2：抽帧
 python scripts/status.py                      # 查看进度
 
 # 一条命令跑完一集的所有门禁
-python scripts/gates.py <slug>
+python scripts/gates.py <slug>          # 定稿后最终门禁
 python scripts/gates.py --all
 
 # 生成全套课时索引
@@ -55,7 +55,7 @@ python scripts/build_index.py
 python scripts/package.py
 ```
 
-单项门禁（调试时用，失败时退出码 1）：
+单项门禁（调试时用；内容失败退出码 1，缺文件/用法错误退出码 2）：
 
 ```bash
 python scripts/check_outline.py work/<slug>/outline.md --slug <slug>
@@ -112,7 +112,7 @@ Claude Code 的斜杠命令：
 ```
 videos/          原始视频（git 忽略）
 work/<slug>/     中间产物（可重建）
-output/<slug>/   交付物：notes.md、slides/index.html、slides.pdf、report.md
+output/<slug>/   交付物：notes.md、slides/index.html、slides/slides.pdf、report.md
 output/index.html 全套课时总索引
 dist/            打包后的 zip（git 忽略）
 scripts/         确定性脚本（ffmpeg / ASR / 抽帧 / 门禁 / 索引）

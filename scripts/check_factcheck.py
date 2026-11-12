@@ -15,7 +15,8 @@
 4. CONTESTED 行的处理必须含“标注/加注/限定/说明”
 5. enrichment.md 里每张 E 卡至少被核查一次
 6. slides 里每个带 `.src.ext` 角标的页面至少被核查一次（位置写 pN）
-7. 扫描绝对化措辞，输出 WARN 供人工复核（不直接判 FAIL）
+7. 判定不能为空；CONTESTED 必须有标注类处理
+8. 扫描绝对化措辞，输出 WARN 供人工复核（不直接判 FAIL）
 """
 
 from __future__ import annotations
@@ -68,12 +69,20 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="校验 fact-check.md")
     ap.add_argument("path", type=Path)
     ap.add_argument("--enrichment", type=Path)
-    ap.add_argument("--slides", type=Path)
+    ap.add_argument("--slides", type=Path, help="课件源文件；与 --allow-no-slides 二选一")
+    ap.add_argument(
+        "--allow-no-slides",
+        action="store_true",
+        help="S4.6-A 预检：明确跳过课件页覆盖（最终门禁不得使用）",
+    )
     ap.add_argument("--min-rows", type=int, default=20)
     args = ap.parse_args()
 
     if not args.path.exists():
         print(f"FAIL 文件不存在：{args.path}")
+        return 2
+    if not args.slides and not args.allow_no_slides:
+        print("FAIL 必须提供 --slides，或显式传 --allow-no-slides（仅限 S4.6-A 预检）")
         return 2
 
     text = args.path.read_text(encoding="utf-8")
@@ -92,13 +101,15 @@ def main() -> int:
 
     for idx, row in enumerate(rows, start=1):
         verdict = (row.get("判定") or "").strip().upper()
-        if verdict not in VERDICTS and verdict:
+        if not verdict:
+            errors.append(f"第 {idx} 行判定为空")
+        elif verdict not in VERDICTS:
             errors.append(f"第 {idx} 行判定非法：{verdict}")
         treatment = (row.get("处理") or "").strip()
         if verdict == "ERROR":
             if not treatment or any(k in treatment for k in ("待处理", "TODO", "未处理", "待定")):
                 errors.append(f"第 {idx} 行 ERROR 未处理：{row.get('主张', '')[:30]}")
-        if verdict == "CONTESTED" and treatment and not any(
+        if verdict == "CONTESTED" and not any(
             k in treatment for k in ("标注", "加注", "限定", "说明", "有争议")
         ):
             errors.append(f"第 {idx} 行 CONTESTED 未标注争议：{row.get('主张', '')[:30]}")
