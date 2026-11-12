@@ -1,0 +1,7 @@
+# M1 起需要（M0 只依赖 ffmpeg，无需安装）
+faster-whisper>=1.1,<2
+Pillow>=10,<12
+zhconv>=1.4
+
+# 可选：
+# opencc-python-reimplemented   # 另一种简繁归一化方案
