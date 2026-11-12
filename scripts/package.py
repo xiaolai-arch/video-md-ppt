@@ -63,7 +63,7 @@ def main() -> int:
 
     # 指定集号时重新收集，避免把未指定课时混进来
     files: list[Path] = []
-    for name in ("index.html", "README.md"):
+    for name in ("index.html", "README.md", "课程说明.md"):
         p = OUT / name
         if p.exists():
             files.append(p)

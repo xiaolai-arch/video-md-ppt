@@ -193,7 +193,8 @@ def build_html(rows: list[dict]) -> str:
   <ul>
 {chr(10).join(cards)}
   </ul>
-  <footer>由 <code>scripts/build_index.py</code> 生成。索引不内嵌课件，链接指向同目录下的文件。</footer>
+  <footer>由 <code>scripts/build_index.py</code> 生成。索引不内嵌课件，链接指向同目录下的文件。
+    交付范围与已知局限见 <a href="课程说明.md">课程交付说明</a>。</footer>
 </div>
 </body>
 </html>

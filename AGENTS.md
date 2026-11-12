@@ -146,6 +146,9 @@ Windows 控制台遇到 IPA 字符报 `UnicodeEncodeError` 时，命令前加
 - 行尾 `\` 续行改为单行命令；
 - `ls | head` 改为 `Get-ChildItem | Select-Object -First 10`。
 
+若 agent 的 shell 找不到 `python`（例如 Codex sandbox 没继承 PATH），先跑 `python --version`
+或 `py -3 --version` 探测，再用可用解释器的完整路径；不要因此跳过门禁。
+
 `gates.py` 的退出码：0 全部通过；1 单元不存在或内容门禁失败；2 用法错误（未知门禁、缺 slug）。
 `check_factcheck.py` 缺 `--slides` 且没有 `--allow-no-slides` 时返回 2。
 

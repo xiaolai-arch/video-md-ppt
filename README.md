@@ -19,6 +19,9 @@ Claude Code、Codex、Gemini CLI、Cursor、Orca worker 都能跑。
 | M3 | S4.5 知识深挖、S4.6 内容核查、S5 HTML 课件 | ✅ 22 张深挖卡 + 独立核查表；58 页单文件 HTML + PDF + 逐页 PNG，自检通过 |
 | M4 | 批量、多 agent 适配、全套交付 | ✅ 12 集全部完成；`AGENTS.md` + `prompts/`；`gates.py` 一键门禁；`output/index.html` 总索引 |
 
+> 01《使用说明》是课程介绍，按设计不做深挖与内容核查；`gates.py` 对 `01_` 前缀自动豁免这两项。
+> 交付范围与各集已知局限见 [`output/课程说明.md`](output/课程说明.md)。
+
 ## 技术选型（摘要）
 
 | 层 | 选型 |
@@ -114,6 +117,7 @@ videos/          原始视频（git 忽略）
 work/<slug>/     中间产物（可重建）
 output/<slug>/   交付物：notes.md、slides/index.html、slides/slides.pdf、report.md
 output/index.html 全套课时总索引
+output/课程说明.md 交付范围与已知局限
 dist/            打包后的 zip（git 忽略）
 scripts/         确定性脚本（ffmpeg / ASR / 抽帧 / 门禁 / 索引）
 prompts/         可移植的阶段提示词
