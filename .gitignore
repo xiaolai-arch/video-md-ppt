@@ -9,6 +9,7 @@ work/*
 # 交付物
 output/*
 !output/.gitkeep
+!output/课程说明.md
 
 # Python
 __pycache__/
