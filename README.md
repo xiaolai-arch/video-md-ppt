@@ -4,9 +4,15 @@
 一条分阶段执行、每步可人工干预的流水线，**不绑定单一 agent**：
 Claude Code、Codex、Gemini CLI、Cursor、Orca worker 都能跑。
 
+**当前交付**：12 集课程已完成，共 547 页课件，笔记、深挖、独立核查、HTML/PDF 全部通过门禁；
+总索引见 `output/index.html`，交付说明见 `output/课程说明.md`。
+
 > 入口：[`AGENTS.md`](AGENTS.md)（agent 无关的执行手册）
+>
 > 阶段提示词：[`prompts/`](prompts/)
+>
 > 需求与设计：[`docs/需求文档.md`](docs/需求文档.md)
+>
 > 选型依据与许可证：[`docs/技术选型.md`](docs/技术选型.md)
 
 ## 状态
@@ -16,8 +22,8 @@ Claude Code、Codex、Gemini CLI、Cursor、Orca worker 都能跑。
 | M0 | 骨架、配置、状态机、S0 预处理 | ✅ 已完成 |
 | M1 | S1 转写、S2 抽帧 | ✅ 脚本完成并冒烟通过（CPU/tiny） |
 | M2 | S3 大纲、S4 笔记 | ✅ 真实样例通过（覆盖率 100%，笔记门禁 PASS） |
-| M3 | S4.5 知识深挖、S4.6 内容核查、S5 HTML 课件 | ✅ 22 张深挖卡 + 独立核查表；58 页单文件 HTML + PDF + 逐页 PNG，自检通过 |
-| M4 | 批量、多 agent 适配、全套交付 | ✅ 12 集全部完成；`AGENTS.md` + `prompts/`；`gates.py` 一键门禁；`output/index.html` 总索引 |
+| M3 | S4.5 知识深挖、S4.6 内容核查、S5 HTML 课件 | ✅ 02 集 22 张深挖卡 + 独立核查表；58 页单文件 HTML + PDF + 逐页 PNG，自检通过 |
+| M4 | 批量、多 agent 适配、全套交付 | ✅ 12 集全部完成；`AGENTS.md` + `prompts/`；`gates.py` 一键门禁；26 项门禁回归测试 + CI；`output/index.html` 总索引；`dist/` 分发包 |
 
 > 01《使用说明》是课程介绍，按设计不做深挖与内容核查；`gates.py` 对 `01_` 前缀自动豁免这两项。
 > 交付范围与各集已知局限见 [`output/课程说明.md`](output/课程说明.md)。
@@ -40,7 +46,10 @@ Claude Code、Codex、Gemini CLI、Cursor、Orca worker 都能跑。
 
 ## 快速开始
 
+依赖：Python 3.10+、ffmpeg；渲染课件需要 Node.js（`npx` 会自动取 Marp CLI 4.5.1）。
+
 ```bash
+python -m pip install -r requirements.txt     # 转写、抽帧、图片处理
 python scripts/doctor.py                      # 环境自检
 python scripts/fetch_model.py large-v3        # 预下载模型（镜像 + 断点续传）
 python scripts/probe.py videos/第3讲.mp4       # S0：探测 + 抽音频
@@ -89,6 +98,16 @@ work/<slug>/
 
 `slug` = `视频文件名_内容哈希前8位`，同名视频不会互相覆盖；S0 已完成会自动跳过，重跑加 `--force`。
 
+## 质量保证
+
+- **五道门禁**：大纲、笔记、深挖、独立核查、课件版式；`gates.py` 一次跑完，缺产物不再静默跳过。
+- **写查分离**：S4.6 由另一个上下文执行，作者不能自己判“没问题”。
+- **门禁自身有回归测试**：`tests/` 下 26 项，覆盖“核查表缺课件路径却假通过”等历史事故；
+  `.github/workflows/tests.yml` 在改动 `scripts/` 时自动运行。
+- **课件检查**：`check_slides.py` 测版式溢出，并核对图片缺失、外链、放大与 alt；
+  图片清单（页号、原始尺寸、渲染宽度）随检查输出，供逐张复查。
+- **已知局限**：按集记录在 `output/课程说明.md` 与各集 `report.md`，不隐藏争议与讲者口误。
+
 ## 多 agent 使用
 
 核心规则只有一份：[`AGENTS.md`](AGENTS.md)。各宿主用薄适配层指向它。
@@ -100,6 +119,9 @@ work/<slug>/
 | Gemini CLI | `GEMINI.md` | `gemini -p "读 AGENTS.md，按 prompts/s5-slides.md 做 <slug>"` |
 | Cursor / Windsurf | 自动读根目录 `AGENTS.md` | 对话里指定阶段提示词 |
 | Orca | 把 `AGENTS.md` + 阶段提示词作为 worker task | 写作 worker 与核查 worker 分开 |
+
+> 实测情况：Claude Code 与 Codex CLI 已跑通（Codex 做过只读冒烟）；Gemini CLI 的入口文档已就绪，
+> 但开发机未安装，尚未实机验证。
 
 Claude Code 的斜杠命令：
 
@@ -124,11 +146,13 @@ output/index.html 全套课时总索引
 output/课程说明.md 交付范围与已知局限
 dist/            打包后的 zip（git 忽略）
 scripts/         确定性脚本（ffmpeg / ASR / 抽帧 / 门禁 / 索引）
+tests/           门禁回归测试（不依赖真实 work/ 与 output/）
 prompts/         可移植的阶段提示词
 AGENTS.md        agent 无关的执行手册（唯一规范入口）
 CLAUDE.md        Claude Code 入口
 GEMINI.md        Gemini CLI 入口
 .claude/         Claude Code 的 skills 与 slash commands（薄适配层）
+.github/         CI（门禁回归测试）
 docs/            需求文档与技术选型
 ```
 
